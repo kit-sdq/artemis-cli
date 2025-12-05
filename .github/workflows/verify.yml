@@ -1,4 +1,4 @@
-name: Artemis Score Stats (PRs & Main Branch)
+name: Artemis Cli (PRs & Main Branch)
 
 on:
   push:
