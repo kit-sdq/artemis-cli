@@ -31,7 +31,7 @@
         <dependency>
             <groupId>edu.kit.kastel.sdq</groupId>
             <artifactId>artemis4j</artifactId>
-            <version>7.10.1</version>
+            <version>8.5.0</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
