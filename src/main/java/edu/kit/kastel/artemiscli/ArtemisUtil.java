@@ -30,7 +30,7 @@ public final class ArtemisUtil {
         List<String> availableExercises = new ArrayList<>();
 
         for (var exercise : allProgrammingExercises(course).toList()) {
-            if (List.of(exercise.getShortName(), exercise.getTitle()).contains(name)) {
+            if (List.of(exercise.getShortName(), exercise.getTitle(), "" + exercise.getId()).contains(name.toLowerCase())) {
                 return exercise;
             }
             availableExercises.add(exercise.getShortName());

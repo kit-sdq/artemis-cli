@@ -1,8 +1,9 @@
 package edu.kit.kastel.artemiscli;
 
 import edu.kit.kastel.sdq.artemis4j.ArtemisNetworkException;
+import edu.kit.kastel.sdq.artemis4j.client.ArtemisClient;
 import edu.kit.kastel.sdq.artemis4j.client.ProgrammingSubmissionDTO;
-import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmission;
+import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmissionWithResults;
 import picocli.CommandLine;
 
 import java.util.ArrayList;
@@ -41,12 +42,12 @@ public class UnlockCommand implements Command {
         var exercises = ArtemisUtil.listAllApplyingExercises(this.parent.course(), this.exerciseName);
 
         for (var exercise : exercises) {
-            List<ProgrammingSubmission> availableSubmissions = ListLocksCommand.listLockedSubmissions(this.parent.course(), exercise);
+            List<ProgrammingSubmissionWithResults> availableSubmissions = ListLocksCommand.listLockedSubmissions(this.parent.course(), exercise);
 
-            Collection<ProgrammingSubmission> submissions = new ArrayList<>();
+            Collection<ProgrammingSubmissionWithResults> submissions = new ArrayList<>();
             outer: for (long submissionId : this.submissionIds) {
                 for (var submission : availableSubmissions) {
-                    if (submission.getId() == submissionId) {
+                    if (submission.getSubmission().getId() == submissionId) {
                         submissions.add(submission);
                         continue outer;
                     }
@@ -60,17 +61,17 @@ public class UnlockCommand implements Command {
             }
 
             for (var submission : submissions) {
-                unlock(submission);
-                System.out.println("Unlocked submission " + submission.getId());
+                unlock(this.parent.course().getConnection().getClient(), submission);
+                System.out.println("Unlocked submission " + submission.getSubmission().getId());
             }
         }
     }
 
-    private static void unlock(ProgrammingSubmission submission) throws ArtemisNetworkException {
-        if (submission.isSubmitted()) {
+    private static void unlock(ArtemisClient client, ProgrammingSubmissionWithResults submission) throws ArtemisNetworkException {
+        if (submission.getFirstRoundAssessment().isSubmitted()) {
             throw new IllegalStateException("Submission has already been submitted");
         }
 
-        ProgrammingSubmissionDTO.cancelAssessment(submission.getConnection().getClient(), submission.getId());
+        ProgrammingSubmissionDTO.cancelAssessment(client, submission.getSubmission().getId());
     }
 }
