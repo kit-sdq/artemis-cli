@@ -1,9 +1,10 @@
 package edu.kit.kastel.artemiscli;
 
 import edu.kit.kastel.sdq.artemis4j.ArtemisClientException;
-import edu.kit.kastel.sdq.artemis4j.grading.ClonedProgrammingSubmission;
 import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingExercise;
 import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmission;
+import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmissionWithResults;
+import org.eclipse.jgit.dircache.InvalidPathException;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -65,19 +66,30 @@ public class CloneCommand implements Command {
     }
 
     private static void cloneSubmissions(ProgrammingExercise exercise, Path outputFolder, Predicate<? super ProgrammingSubmission> shouldClone) throws ArtemisClientException {
-        List<ProgrammingSubmission> submissions = exercise.fetchSubmissions(0, false);
+        List<ProgrammingSubmissionWithResults> submissions = exercise.fetchAllSubmissions();
         System.out.println("Found " + submissions.size() + " submissions");
 
-        for (ProgrammingSubmission submission : submissions) {
-            if (!shouldClone.test(submission)) {
+        for (ProgrammingSubmissionWithResults submission : submissions) {
+            var actualSubmission = submission.getSubmission();
+            if (!shouldClone.test(actualSubmission)) {
                 continue;
             }
 
-            System.out.println("Submission " + submission.getId() + " is from " + submission.getRepositoryUrl());
-            Path output = Path.of(outputFolder.toString(), extractFolderName(submission.getRepositoryUrl()));
+            System.out.println("Submission " + actualSubmission.getId() + " is from " + actualSubmission.getRepositoryUrl());
+            Path output = Path.of(outputFolder.toString(), extractFolderName(actualSubmission.getRepositoryUrl()));
+
+            if (output.toFile().exists()) {
+                System.out.println("Warning: The folder " + output + " already exists, skipping submission " + actualSubmission.getId());
+                continue;
+            }
 
             // ignore the submission/do not close it, otherwise the folder will be deleted
-            ClonedProgrammingSubmission _cloned = submission.cloneViaVCSTokenInto(output, null);
+            try {
+                actualSubmission.cloneViaVCSTokenInto(output, null);
+            } catch (InvalidPathException e) {
+                // This happens when an invalid filename like `CON` on Windows is used
+                System.out.println("Error: Could not clone submission " + actualSubmission.getId() + " into " + output + ": " + e.getMessage());
+            }
         }
     }
 

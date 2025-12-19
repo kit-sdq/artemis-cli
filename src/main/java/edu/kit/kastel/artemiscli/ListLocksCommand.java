@@ -5,11 +5,10 @@ import edu.kit.kastel.sdq.artemis4j.client.CourseDTO;
 import edu.kit.kastel.sdq.artemis4j.client.GenericSubmissionDTO;
 import edu.kit.kastel.sdq.artemis4j.grading.Course;
 import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingExercise;
-import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmission;
+import edu.kit.kastel.sdq.artemis4j.grading.ProgrammingSubmissionWithResults;
 import picocli.CommandLine;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,49 +33,49 @@ public class ListLocksCommand implements Command {
 
         for (ProgrammingExercise exercise : exercises) {
             for (var submission : listLockedSubmissions(this.parent.course(), exercise)) {
+                if (submission.getFirstRoundAssessment() == null) {
+                    throw new IllegalStateException(
+                        "Submission %s is locked, but has no first round assessment.".formatted(submission.getSubmission().getId())
+                    );
+                }
+
                 System.out.printf(
                     "The submission by %s with the id %s is currently locked by %s.%n",
-                    submission.getStudent().map(Object::toString).orElse("???"),
-                    submission.getId(),
-                    submission.getAssessor().map(Object::toString).orElse("???")
+                    submission.getSubmission().getStudent().map(Object::toString).orElse("???"),
+                    submission.getSubmission().getId(),
+                    submission.getFirstRoundAssessment().getAssessor()
                 );
             }
         }
     }
 
-    static List<ProgrammingSubmission> listLockedSubmissions(Course course, ProgrammingExercise exercise) throws ArtemisNetworkException {
+    static List<ProgrammingSubmissionWithResults> listLockedSubmissions(Course course, ProgrammingExercise exercise) throws ArtemisNetworkException {
         Set<Long> allLockedSubmissions = CourseDTO.fetchLockedSubmissions(course.getConnection().getClient(), course.getId())
-            .stream()
-            .map(GenericSubmissionDTO::id)
-            .collect(Collectors.toSet());
+                .stream()
+                .map(GenericSubmissionDTO::id)
+                .collect(Collectors.toSet());
 
         if (allLockedSubmissions.isEmpty()) {
             return List.of();
         }
 
         if (exercise != null) {
-            List<ProgrammingSubmission> allSubmissions = exercise.fetchSubmissions(0, false);
-            if (exercise.hasSecondCorrectionRound()) {
-                allSubmissions.addAll(exercise.fetchSubmissions(1, false));
-            }
+            List<ProgrammingSubmissionWithResults> allSubmissions = exercise.fetchAllSubmissions();
 
 
             return allSubmissions.stream()
-                .filter(submission -> allLockedSubmissions.contains(submission.getId()))
-                .toList();
+                    .filter(submission -> allLockedSubmissions.contains(submission.getSubmission().getId()))
+                    .toList();
         }
 
-        List<ProgrammingSubmission> result = new ArrayList<>();
+        List<ProgrammingSubmissionWithResults> result = new ArrayList<>();
         Deque<ProgrammingExercise> exercises = new LinkedList<>(course.getProgrammingExercises());
         while (!allLockedSubmissions.isEmpty() && !exercises.isEmpty()) {
             ProgrammingExercise currentExercise = exercises.removeLast();
-            Collection<ProgrammingSubmission> submissions = new ArrayList<>(currentExercise.fetchSubmissions(0, false));
-            if (currentExercise.hasSecondCorrectionRound()) {
-                submissions.addAll(currentExercise.fetchSubmissions(1, false));
-            }
+            List<ProgrammingSubmissionWithResults> submissions = currentExercise.fetchAllSubmissions();
 
             for (var submission : submissions) {
-                if (allLockedSubmissions.remove(submission.getId())) {
+                if (allLockedSubmissions.remove(submission.getSubmission().getId())) {
                     result.add(submission);
                 }
             }

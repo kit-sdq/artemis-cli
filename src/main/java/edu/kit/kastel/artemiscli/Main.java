@@ -22,7 +22,7 @@ public final class Main implements Runnable{
     CommandLine.Model.CommandSpec specification;
 
     @CommandLine.Option(names = {"--url"}, description = "The URL of the Artemis instance. Note that the https:// prefix is required.")
-    private String artemisUrl = "https://artemis.praktomat.cs.kit.edu/";
+    private String artemisUrl = "https://artemis.cs.kit.edu/";
     //private String artemisUrl = "https://artemis-test.sdq.kastel.kit.edu/";
 
     @CommandLine.Option(names = {"--username"}, description = "The username to use for authentication.", required = true)

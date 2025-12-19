@@ -7,9 +7,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 @CommandLine.Command(name = "show", mixinStandardHelpOptions = true,
-    description = "Shows the repository urls of the given submissions.")
+        description = "Shows the repository urls of the given submissions.")
 public class ShowRepositoryCommand implements Command {
-    private static final String REPOSITORY_URL = "https://artemis.praktomat.cs.kit.edu/courses/%d/exercises/%d/repository/%d";
+    private static final String REPOSITORY_URL = "https://artemis.cs.kit.edu/courses/%d/exercises/%d/repository/%d";
 
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec specification;
@@ -31,16 +31,18 @@ public class ShowRepositoryCommand implements Command {
         }
 
         Collection<String> remainingIds = new LinkedHashSet<>(List.of(this.submissionIds));
-        outer: for (var exercise : ArtemisUtil.listAllApplyingExercises(this.parent.course(), this.exerciseName)) {
-            for (var submission : exercise.fetchSubmissions(0, false)) {
+        outer:
+        for (var exercise : ArtemisUtil.listAllApplyingExercises(this.parent.course(), this.exerciseName)) {
+            for (var submission : exercise.fetchAllSubmissions()) {
+                var actualSubmission = submission.getSubmission();
                 if (remainingIds.isEmpty()) {
                     break outer;
                 }
 
-                if (remainingIds.remove("" + submission.getId()) || submission.getStudent().isPresent() && remainingIds.contains(submission.getStudent().get().toString())) {
-                    String prefix = "[%s][%s][%s]:".formatted(exercise.getTitle(), submission.getId(), submission.getStudent().get().toString());
-                    System.out.printf("%s git url to clone: %s%n".formatted(prefix, submission.getRepositoryUrl()));
-                    System.out.printf("%s artemis url:      %s%n".formatted(" ".repeat(prefix.length()), REPOSITORY_URL.formatted(this.parent.course().getId(), exercise.getId(), submission.getParticipationId())));
+                if (remainingIds.remove("" + actualSubmission.getId()) || actualSubmission.getStudent().isPresent() && remainingIds.contains(actualSubmission.getStudent().get().toString())) {
+                    String prefix = "[%s][%s][%s]:".formatted(exercise.getTitle(), actualSubmission.getId(), actualSubmission.getStudent().get().toString());
+                    System.out.printf("%s git url to clone: %s%n".formatted(prefix, actualSubmission.getRepositoryUrl()));
+                    System.out.printf("%s artemis url:      %s%n".formatted(" ".repeat(prefix.length()), REPOSITORY_URL.formatted(this.parent.course().getId(), exercise.getId(), actualSubmission.getParticipationId())));
                 }
             }
         }
