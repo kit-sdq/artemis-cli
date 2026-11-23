@@ -16,25 +16,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6.1.0
+    - uses: actions/checkout@v7.0.1
       with:
         submodules: true
 
     - name: Set up JDK
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@v6
       with:
         distribution: 'temurin'
-        java-version: 25.0.5+8.0.LTS
+        java-version: 25.0.5+100000002.0.LTS
 
     - name: Cache Maven packages
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-maven-
 
     - name: Cache Distributions
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ./dist
         key: cache-dist-${{github.run_id}}
