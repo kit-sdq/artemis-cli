@@ -42,7 +42,7 @@ public final class Main implements Runnable{
         List<Course> courses = new ArrayList<>(connection.getCourses());
 
         // a newer course will have a higher id
-        courses.sort(Comparator.comparingInt(Course::getId));
+        courses.sort(Comparator.comparingLong(Course::getId));
 
         if (courses.isEmpty()) {
             throw new IllegalStateException("Artemis did not return any courses");
